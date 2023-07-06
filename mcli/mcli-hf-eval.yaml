@@ -2,7 +2,7 @@ integrations:
 - integration_type: git_repo
   git_repo: mosaicml/llm-foundry
   # git_branch: # use your branch
-  # git_commit: # OR use your commit hash
+  git_commit: 29d65cc26853c09f6de7542978056ddb0b07e98c # OR use your commit hash
   pip_install: -e ".[gpu]"
   ssh_clone: false # Should be true if using a private repo
 - integration_type: wandb
@@ -15,7 +15,7 @@ command: |
 
 # Mosaic Cloud will use run_name (with a unique suffix) to populate the env var $RUN_NAME
 run_name: all-eval
-gpu_num: 64
+gpu_num: 16
 gpu_type: a100_40gb
 cluster: r7z2 # replace with your cluster here!
 
@@ -30,6 +30,48 @@ parameters:
   precision: amp_fp16
 
   models:
+  -
+    model_name: internlm/internlm-7b
+    # Tokenizer
+    tokenizer:
+      name: internlm/internlm-7b
+      kwargs:
+        model_max_length: ${max_seq_len}
+
+    model:
+      name: hf_causal_lm
+      pretrained_model_name_or_path: internlm/internlm-7b
+      init_device: cpu
+      pretrained: true
+      use_auth_token: false
+  -
+    model_name: internlm/internlm-chat-7b
+    # Tokenizer
+    tokenizer:
+      name: internlm/internlm-chat-7b
+      kwargs:
+        model_max_length: ${max_seq_len}
+
+    model:
+      name: hf_causal_lm
+      pretrained_model_name_or_path: internlm/internlm-chat-7b
+      init_device: cpu
+      pretrained: true
+      use_auth_token: false
+  -
+    model_name: internlm/internlm-chat-7b-8k
+    # Tokenizer
+    tokenizer:
+      name: internlm/internlm-chat-7b-8k
+      kwargs:
+        model_max_length: ${max_seq_len}
+
+    model:
+      name: hf_causal_lm
+      pretrained_model_name_or_path: internlm/internlm-chat-7b-8k
+      init_device: cpu
+      pretrained: true
+      use_auth_token: false
   # -
   #   model_name: mosaicml/mpt-7b-chat-v2
   #   # Tokenizer
@@ -72,157 +114,228 @@ parameters:
   #     init_device: cpu
   #     pretrained: true
   #     use_auth_token: false
+  # -
+  #   model_name: mosaicml/mpt-7b-storywriter
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: mosaicml/mpt-7b-storywriter
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-7b-storywriter
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: mosaicml/mpt-7b-chat
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: mosaicml/mpt-7b-chat
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-7b-chat
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: mosaicml/mpt-7b-instruct
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: mosaicml/mpt-7b-instruct
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-7b-instruct
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: falcon-40b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: tiiuae/falcon-40b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: tiiuae/falcon-40b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: mosaicml/mpt-7b-8k
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: mosaicml/mpt-7b-8k
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-7b-8k
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: true
+  # -
+  #   model_name: mpt-30b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: EleutherAI/gpt-neox-20b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-30b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: true
+  # -
+  #   model_name: falcon-40b-instruct
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: tiiuae/falcon-40b-instruct
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: tiiuae/falcon-40b-instruct
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: mosaicml/mpt-7b-8k-500b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: mosaicml/mpt-7b-8k-500b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-7b-8k-500b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: true
+  
+  # -
+  #   model_name: llama-30b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: huggyllama/llama-30b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: huggyllama/llama-30b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: tiiuae/falcon-7b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: tiiuae/falcon-7b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: tiiuae/falcon-7b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: tiiuae/falcon-7b-instruct
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: tiiuae/falcon-7b-instruct
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: tiiuae/falcon-7b-instruct
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: togethercomputer/RedPajama-INCITE-7B-Instruct
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: togethercomputer/RedPajama-INCITE-7B-Instruct
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: togethercomputer/RedPajama-INCITE-7B-Instruct
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: togethercomputer/RedPajama-INCITE-7B-Base
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: togethercomputer/RedPajama-INCITE-7B-Base
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: togethercomputer/RedPajama-INCITE-7B-Base
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
   -
-    model_name: mosaicml/mpt-7b-storywriter
+    model_name: Salesforce/codegen25-7b-instruct
     # Tokenizer
     tokenizer:
-      name: mosaicml/mpt-7b-storywriter
+      name: Salesforce/codegen25-7b-instruct
       kwargs:
         model_max_length: ${max_seq_len}
 
     model:
       name: hf_causal_lm
-      pretrained_model_name_or_path: mosaicml/mpt-7b-storywriter
+      pretrained_model_name_or_path: Salesforce/codegen25-7b-instruct
       init_device: cpu
       pretrained: true
       use_auth_token: false
   -
-    model_name: mosaicml/mpt-7b-chat
+    model_name: Salesforce/codegen25-7b-mono
     # Tokenizer
     tokenizer:
-      name: mosaicml/mpt-7b-chat
+      name: Salesforce/codegen25-7b-mono
       kwargs:
         model_max_length: ${max_seq_len}
 
     model:
       name: hf_causal_lm
-      pretrained_model_name_or_path: mosaicml/mpt-7b-chat
+      pretrained_model_name_or_path: Salesforce/codegen25-7b-mono
       init_device: cpu
       pretrained: true
       use_auth_token: false
   -
-    model_name: mosaicml/mpt-7b-instruct
+    model_name: Salesforce/codegen25-7b-multi
     # Tokenizer
     tokenizer:
-      name: mosaicml/mpt-7b-instruct
+      name: Salesforce/codegen25-7b-multi
       kwargs:
         model_max_length: ${max_seq_len}
 
     model:
       name: hf_causal_lm
-      pretrained_model_name_or_path: mosaicml/mpt-7b-instruct
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: falcon-40b
-    # Tokenizer
-    tokenizer:
-      name: tiiuae/falcon-40b
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: tiiuae/falcon-40b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: mpt-30b
-    # Tokenizer
-    tokenizer:
-      name: EleutherAI/gpt-neox-20b
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: mosaicml/mpt-30b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: true
-  -
-    model_name: falcon-40b-instruct
-    # Tokenizer
-    tokenizer:
-      name: tiiuae/falcon-40b-instruct
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: tiiuae/falcon-40b-instruct
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: llama-30b
-    # Tokenizer
-    tokenizer:
-      name: huggyllama/llama-30b
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: huggyllama/llama-30b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: tiiuae/falcon-7b
-    # Tokenizer
-    tokenizer:
-      name: tiiuae/falcon-7b
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: tiiuae/falcon-7b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: tiiuae/falcon-7b-instruct
-    # Tokenizer
-    tokenizer:
-      name: tiiuae/falcon-7b-instruct
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: tiiuae/falcon-7b-instruct
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: togethercomputer/RedPajama-INCITE-7B-Instruct
-    # Tokenizer
-    tokenizer:
-      name: togethercomputer/RedPajama-INCITE-7B-Instruct
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: togethercomputer/RedPajama-INCITE-7B-Instruct
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: togethercomputer/RedPajama-INCITE-7B-Base
-    # Tokenizer
-    tokenizer:
-      name: togethercomputer/RedPajama-INCITE-7B-Base
-      kwargs:
-        model_max_length: ${max_seq_len}
-
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: togethercomputer/RedPajama-INCITE-7B-Base
+      pretrained_model_name_or_path: Salesforce/codegen25-7b-multi
       init_device: cpu
       pretrained: true
       use_auth_token: false
