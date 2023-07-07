@@ -11,6 +11,9 @@ integrations:
 
 command: |
   cd llm-foundry/scripts
+  pip install tiktoken
+  pip install einops
+  pip install sentencepiece
   composer eval/eval.py /mnt/config/parameters.yaml
 
 # Mosaic Cloud will use run_name (with a unique suffix) to populate the env var $RUN_NAME
@@ -30,48 +33,52 @@ parameters:
   precision: amp_fp16
 
   models:
-  -
-    model_name: internlm/internlm-7b
-    # Tokenizer
-    tokenizer:
-      name: internlm/internlm-7b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  # -
+  #   model_name: internlm/internlm-7b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: internlm/internlm-7b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: internlm/internlm-7b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: internlm/internlm-chat-7b
-    # Tokenizer
-    tokenizer:
-      name: internlm/internlm-chat-7b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: internlm/internlm-7b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: internlm/internlm-chat-7b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: internlm/internlm-chat-7b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: internlm/internlm-chat-7b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: internlm/internlm-chat-7b-8k
-    # Tokenizer
-    tokenizer:
-      name: internlm/internlm-chat-7b-8k
-      kwargs:
-        model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: internlm/internlm-chat-7b-8k
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: internlm/internlm-chat-7b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: internlm/internlm-chat-7b-8k
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: internlm/internlm-chat-7b-8k
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: internlm/internlm-chat-7b-8k
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
   # -
   #   model_name: mosaicml/mpt-7b-chat-v2
   #   # Tokenizer
@@ -297,6 +304,22 @@ parameters:
   #     init_device: cpu
   #     pretrained: true
   #     use_auth_token: false
+  # -
+  #   model_name: replit/replit-code-v1-3b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: replit/replit-code-v1-3b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
+
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: replit/replit-code-v1-3b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
   -
     model_name: Salesforce/codegen25-7b-instruct
     # Tokenizer
@@ -304,6 +327,8 @@ parameters:
       name: Salesforce/codegen25-7b-instruct
       kwargs:
         model_max_length: ${max_seq_len}
+        trust_remote_code: true
+
 
     model:
       name: hf_causal_lm
@@ -318,6 +343,7 @@ parameters:
       name: Salesforce/codegen25-7b-mono
       kwargs:
         model_max_length: ${max_seq_len}
+        trust_remote_code: true
 
     model:
       name: hf_causal_lm
@@ -332,6 +358,7 @@ parameters:
       name: Salesforce/codegen25-7b-multi
       kwargs:
         model_max_length: ${max_seq_len}
+        trust_remote_code: true
 
     model:
       name: hf_causal_lm
@@ -339,104 +366,104 @@ parameters:
       init_device: cpu
       pretrained: true
       use_auth_token: false
-  -
-    model_name: huggyllama/llama-13b
-    # Tokenizer
-    tokenizer:
-      name: huggyllama/llama-13b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  # -
+  #   model_name: huggyllama/llama-13b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: huggyllama/llama-13b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: huggyllama/llama-13b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: huggyllama/llama-7b
-    # Tokenizer
-    tokenizer:
-      name: huggyllama/llama-7b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: huggyllama/llama-13b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: huggyllama/llama-7b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: huggyllama/llama-7b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: huggyllama/llama-7b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: EleutherAI/pythia-12b
-    # Tokenizer
-    tokenizer:
-      name: EleutherAI/pythia-12b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: huggyllama/llama-7b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: EleutherAI/pythia-12b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: EleutherAI/pythia-12b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: EleutherAI/pythia-12b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: EleutherAI/pythia-6.9b
-    # Tokenizer
-    tokenizer:
-      name: EleutherAI/pythia-6.9b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: EleutherAI/pythia-12b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: EleutherAI/pythia-6.9b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: EleutherAI/pythia-6.9b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: EleutherAI/pythia-6.9b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: facebook/opt-6.7b
-    # Tokenizer
-    tokenizer:
-      name: facebook/opt-6.7b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: EleutherAI/pythia-6.9b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: facebook/opt-6.7b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: facebook/opt-6.7b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: facebook/opt-6.7b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: stabilityai/stablelm-tuned-alpha-7b
-    # Tokenizer
-    tokenizer:
-      name: stabilityai/stablelm-tuned-alpha-7b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: facebook/opt-6.7b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: stabilityai/stablelm-tuned-alpha-7b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: stabilityai/stablelm-tuned-alpha-7b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: stabilityai/stablelm-tuned-alpha-7b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: EleutherAI/gpt-j-6b
-    # Tokenizer
-    tokenizer:
-      name: EleutherAI/gpt-j-6b
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: stabilityai/stablelm-tuned-alpha-7b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: EleutherAI/gpt-j-6b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: EleutherAI/gpt-j-6b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: EleutherAI/gpt-j-6b
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: EleutherAI/gpt-j-6b
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
 
 
   # FSDP config for model sharding

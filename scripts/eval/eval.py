@@ -5,7 +5,6 @@ import os
 import re
 import sys
 import time
-import traceback
 from typing import List
 
 import pandas as pd
@@ -46,7 +45,6 @@ def evaluate_model(model_cfg, run_name, model_gauntlet_df):
     evaluators, logger_keys = build_icl_evaluators(cfg.icl_tasks, tokenizer,
                                                    cfg.max_seq_len,
                                                    cfg.device_eval_batch_size)
-
     if hasattr(cfg, 'model_gauntlet'):
         if isinstance(cfg.model_gauntlet, str):
             with open(cfg.model_gauntlet, 'r') as icl_f:
@@ -61,7 +59,8 @@ def evaluate_model(model_cfg, run_name, model_gauntlet_df):
         model_gauntlet_callback = ModelGauntlet(**model_gauntlet)
     else:
         model_gauntlet = None
-    
+        model_gauntlet_callback = None
+
     composer_model = load_model(model_cfg.model, tokenizer,
                                 cfg.get('num_retries', 3))
 
@@ -119,41 +118,39 @@ def main(cfg):
     model_gauntlet_df = None
     models_df = None
     for model_cfg in cfg.models:
-        (in_memory_logger, logger_keys, model_gauntlet_callback,
-            model_gauntlet,
-            model_gauntlet_df) = evaluate_model(model_cfg, cfg.run_name,
-                                                model_gauntlet_df)
+        (in_memory_logger, logger_keys, model_gauntlet_callback, model_gauntlet,
+         model_gauntlet_df) = evaluate_model(model_cfg, cfg.run_name,
+                                             model_gauntlet_df)
 
-        composite_scores = model_gauntlet_callback.eval_end(
-            None, in_memory_logger)
+        if model_gauntlet_callback is not None:
+            composite_scores = model_gauntlet_callback.eval_end(
+                None, in_memory_logger)
 
         benchmark_to_taxonomy = {}
-        for t in model_gauntlet.categories:
-            for b in t.benchmarks:
-                benchmark_to_taxonomy[b.name] = t.name
+        if model_gauntlet is not None:
+            for t in model_gauntlet.categories:
+                for b in t.benchmarks:
+                    benchmark_to_taxonomy[b.name] = t.name
 
         model_results = calculate_markdown_results(logger_keys,
-                                                    in_memory_logger.data,
-                                                    benchmark_to_taxonomy,
-                                                    model_cfg.model_name)
+                                                   in_memory_logger.data,
+                                                   benchmark_to_taxonomy,
+                                                   model_cfg.model_name)
 
         if models_df is None:
             models_df = model_results
         else:
-            models_df = pd.concat([models_df, model_results],
-                                    ignore_index=True)
+            models_df = pd.concat([models_df, model_results], ignore_index=True)
 
-        row = {'model_name': model_cfg['model_name']}
-
-        row.update({
-            t.name: composite_scores[f'metrics/model_gauntlet/{t.name}']
-            for t in model_gauntlet.categories
-        })
-        row.update({
-            'average': composite_scores[f'metrics/model_gauntlet/average']
-        })
-
-        if model_gauntlet_df is not None:
+        if model_gauntlet_df is not None and model_gauntlet is not None and model_gauntlet_df is not None:
+            row = {'model_name': model_cfg['model_name']}
+            row.update({
+                t.name: composite_scores[f'metrics/model_gauntlet/{t.name}']
+                for t in model_gauntlet.categories
+            })
+            row.update({
+                'average': composite_scores[f'metrics/model_gauntlet/average']
+            })
             model_gauntlet_df = pd.concat(
                 [model_gauntlet_df, pd.DataFrame([row])], ignore_index=True)
 
@@ -163,7 +160,6 @@ def main(cfg):
                     'average', ascending=False).to_markdown(index=False))
         print(f'Printing complete results for all models')
         print(models_df.to_markdown(index=False))
-       
 
 
 def calculate_markdown_results(logger_keys, logger_data, benchmark_to_taxonomy,
@@ -203,7 +199,7 @@ def calculate_markdown_results(logger_keys, logger_data, benchmark_to_taxonomy,
                 subscores = results[num_shot][benchmark][metric]
                 if len(subscores) == 1:
                     row = {
-                        'Category': benchmark_to_taxonomy[benchmark],
+                        'Category': benchmark_to_taxonomy.get(benchmark, ''),
                         'Benchmark': benchmark,
                         'Subtask': None,
                         'Accuracy': subscores[0]['val'],
@@ -214,7 +210,7 @@ def calculate_markdown_results(logger_keys, logger_data, benchmark_to_taxonomy,
                 else:
                     row = {
                         'Category':
-                            benchmark_to_taxonomy[benchmark],
+                            benchmark_to_taxonomy.get(benchmark, ''),
                         'Benchmark':
                             benchmark,
                         'Subtask':
@@ -229,12 +225,18 @@ def calculate_markdown_results(logger_keys, logger_data, benchmark_to_taxonomy,
                     df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
                     for sub in subscores:
                         row = {
-                            'Category': benchmark_to_taxonomy[benchmark],
-                            'Benchmark': None,
-                            'Subtask': sub['subcat'],
-                            'Accuracy': sub['val'],
-                            'Number few shot': num_shot,
-                            'Model': model_name
+                            'Category':
+                                benchmark_to_taxonomy.get(benchmark, ''),
+                            'Benchmark':
+                                None,
+                            'Subtask':
+                                sub['subcat'],
+                            'Accuracy':
+                                sub['val'],
+                            'Number few shot':
+                                num_shot,
+                            'Model':
+                                model_name
                         }
                         df = pd.concat([df, pd.DataFrame([row])],
                                        ignore_index=True)

@@ -6,6 +6,7 @@
 from typing import Any, Optional, Union
 import tiktoken
 import openai
+from openai.error import ServiceUnavailableError
 from torchmetrics import Metric
 
 from composer.metrics import InContextLearningMetric
@@ -110,12 +111,23 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
                 # decode one token at a time
                 prompt = self.tokenizer.decode(tokens[:cont_idxs[0]] + expected_cont_tokens[0:i])
                 if not self.chat_model:
-                    chat_completion = openai.Completion.create(
-                        engine=self.model_name,
-                        prompt=prompt,
-                        max_tokens=1,  
-                        logprobs=5,
-                    )
+                    while True:
+                        try:
+                            chat_completion = openai.Completion.create(
+                                engine=self.model_name,
+                                prompt=prompt,
+                                max_tokens=1,  
+                                logprobs=5,
+                            )
+                            break
+                        except ServiceUnavailableError:
+                            continue
+                    
+
+                    # mocking exactly correct output
+                    # mocked_logit = {
+                    #     self.tokenizer.decode(expected_cont_tokens[i:i+1]): 0.0
+                    # }
                     if len(chat_completion['choices'][0]['logprobs']['top_logprobs']) > 0:
                         tensor = self.tokenizer.construct_logit_tensor(
                             dict(chat_completion['choices'][0]['logprobs']['top_logprobs'][0])
@@ -134,10 +146,10 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
             
 
     def update_metric(self, batch: Any, outputs: Any, metric: Metric) -> None:
-        breakpoint()
         self.labels = batch.pop('labels')
         self.labels[:, :-1] = self.labels[:, 1:].clone()
         self.labels[:, -1] = -100
+
         if isinstance(metric, InContextLearningMetric) and batch.get('mode', None) == 'icl_task':
             assert self.labels is not None
             metric.update(batch, outputs, self.labels)
