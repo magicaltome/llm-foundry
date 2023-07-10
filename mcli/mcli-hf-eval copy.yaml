@@ -1,8 +1,8 @@
 integrations:
 - integration_type: git_repo
   git_repo: mosaicml/llm-foundry
-  # git_branch: # use your branch
-  git_commit: 29d65cc26853c09f6de7542978056ddb0b07e98c # OR use your commit hash
+  git_branch: add_openai_wrapper # use your branch
+  # git_commit: 29d65cc26853c09f6de7542978056ddb0b07e98c # OR use your commit hash
   pip_install: -e ".[gpu]"
   ssh_clone: false # Should be true if using a private repo
 - integration_type: wandb
@@ -34,6 +34,15 @@ parameters:
 
   models:
   -
+    model_name: openai/davinci
+    model:
+      name: openai
+      version: davinci
+    tokenizer:
+      name: openai
+      kwargs:
+        name: davinci
+  -
     model_name: openai/text-ada-001
     model:
       name: openai
@@ -43,15 +52,6 @@ parameters:
       kwargs:
         name: text-ada-001
   -
-    model_name: openai/text-curie-001
-    model:
-      name: openai
-      version: text-curie-001
-    tokenizer:
-      name: openai
-      kwargs:
-        name: text-curie-001
-  -
     model_name: openai/text-babbage-001
     model:
       name: openai
@@ -60,8 +60,28 @@ parameters:
       name: openai
       kwargs:
         name: text-babbage-001
+  -
+    model_name: openai/gpt-4
+    model:
+      name: openai
+      version: gpt-4
+      chat_model: true
+    tokenizer:
+      name: openai
+      kwargs:
+        name: gpt-4
+  -
+    model_name: openai/gpt-3.5-turbo
+    model:
+      name: openai
+      version: gpt-3.5-turbo
+      chat_model: true
+    tokenizer:
+      name: openai
+      kwargs:
+        name: gpt-3.5-turbo
 
-  
+
   # FSDP config for model sharding
   fsdp_config:
     sharding_strategy: FULL_SHARD

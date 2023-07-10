@@ -233,7 +233,7 @@ parameters:
   #     init_device: cpu
   #     pretrained: true
   #     use_auth_token: true
-  
+
   # -
   #   model_name: llama-30b
   #   # Tokenizer

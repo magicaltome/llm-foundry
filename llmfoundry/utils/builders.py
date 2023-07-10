@@ -16,7 +16,6 @@ from composer.optim import DecoupledAdamW
 from composer.optim.scheduler import (ConstantWithWarmupScheduler,
                                       CosineAnnealingWithWarmupScheduler,
                                       LinearWithWarmupScheduler)
-from llmfoundry.models.openai import OpenAITokenizerWrapper
 from composer.utils import dist
 from omegaconf import DictConfig
 from omegaconf import OmegaConf as om
@@ -26,6 +25,7 @@ from transformers import (AutoTokenizer, PreTrainedTokenizer,
 from llmfoundry.callbacks import (FDiffMetrics, Generate, GlobalLRScaling,
                                   LayerFreezing, MonolithicCheckpointSaver,
                                   ScheduledGarbageCollector)
+from llmfoundry.models.openai import OpenAITokenizerWrapper
 from llmfoundry.optim import (DecoupledAdaLRLion, DecoupledClipLion,
                               DecoupledLionW)
 
@@ -139,12 +139,12 @@ def build_tokenizer(om_tokenizer_config: DictConfig,) -> Tokenizer:
         os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
         resolved_om_tokenizer_config = om.to_container(om_tokenizer_config,
-                                                    resolve=True)
+                                                       resolve=True)
         tokenizer_kwargs = resolved_om_tokenizer_config.get(  # type: ignore
             'kwargs', {})
         tokenizer_name = resolved_om_tokenizer_config['name']  # type: ignore
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_name,
-                                                **tokenizer_kwargs)
+                                                  **tokenizer_kwargs)
 
         # HuggingFace does not respect the model_max_length kwarg, and overrides it with
         # min(kwargs['model_max_length'], original_config['model_max_length']), so we
