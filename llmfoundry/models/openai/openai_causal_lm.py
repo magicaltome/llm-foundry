@@ -104,87 +104,88 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
         # If the batch mode is generate, we will generate a requested number of tokens using the underlying
         # model's generate function. Extra generation kwargs can be passed in via the batch. Strings will
         # be returned from eval_forward
-        output_logits_batch = []
-        for tokens, cont_idxs in zip(batch['input_ids'],
-                                     batch['continuation_indices']):
-            seqlen = tokens.shape[0]
-            tokens = tokens.tolist()
-            cont_idxs = cont_idxs.tolist()
-            expected_cont_tokens = tokens[cont_idxs[0]:cont_idxs[-1] + 1]
+        with torch.cuda.device(batch.device):
+            output_logits_batch = []
+            for tokens, cont_idxs in zip(batch['input_ids'],
+                                        batch['continuation_indices']):
+                seqlen = tokens.shape[0]
+                tokens = tokens.tolist()
+                cont_idxs = cont_idxs.tolist()
+                expected_cont_tokens = tokens[cont_idxs[0]:cont_idxs[-1] + 1]
 
-            output_logits = torch.zeros(cont_idxs[0] - 1,
-                                        self.tokenizer.pad_token_id + 1)
-            for i in range(len(expected_cont_tokens)):
-                # decode one token at a time
-                prompt = self.tokenizer.decode(tokens[:cont_idxs[0]] +
-                                               expected_cont_tokens[0:i])
-                if not self.chat_model:
-                    while True:
-                        try:
-                            chat_completion = openai.Completion.create(
-                                engine=self.model_name,
-                                prompt=prompt,
-                                max_tokens=1,
-                                logprobs=5,
-                                temperature=0.0)
-                            break
-                        except ServiceUnavailableError:
-                            continue
-                        except RateLimitError:
-                            sleep(60)
+                output_logits = torch.zeros(cont_idxs[0] - 1,
+                                            self.tokenizer.pad_token_id + 1)
+                for i in range(len(expected_cont_tokens)):
+                    # decode one token at a time
+                    prompt = self.tokenizer.decode(tokens[:cont_idxs[0]] +
+                                                expected_cont_tokens[0:i])
+                    if not self.chat_model:
+                        while True:
+                            try:
+                                chat_completion = openai.Completion.create(
+                                    engine=self.model_name,
+                                    prompt=prompt,
+                                    max_tokens=1,
+                                    logprobs=5,
+                                    temperature=0.0)
+                                break
+                            except ServiceUnavailableError:
+                                continue
+                            except RateLimitError:
+                                sleep(60)
+                                continue
+
+                        if len(chat_completion['choices'][0]['logprobs']
+                            ['top_logprobs']) > 0:
+                            tensor = self.tokenizer.construct_logit_tensor(
+                                dict(chat_completion['choices'][0]['logprobs']
+                                    ['top_logprobs'][0]))
+                        else:
+                            # the model sometimes stops early even though we are still requesting tokens!
+                            # not sure if there's a fix
                             continue
 
-                    if len(chat_completion['choices'][0]['logprobs']
-                           ['top_logprobs']) > 0:
-                        tensor = self.tokenizer.construct_logit_tensor(
-                            dict(chat_completion['choices'][0]['logprobs']
-                                 ['top_logprobs'][0]))
+                        output_logits = torch.cat(
+                            [output_logits, tensor.reshape(1, -1)])
                     else:
-                        # the model sometimes stops early even though we are still requesting tokens!
-                        # not sure if there's a fix
-                        continue
+                        while True:
+                            try:
+                                chat_completion = openai.ChatCompletion.create(
+                                    model=self.model_name,
+                                    messages=[{
+                                        'role': 'user',
+                                        'content': prompt
+                                    }],
+                                    max_tokens=1,
+                                    temperature=0.0)
+                                break
+                            except ServiceUnavailableError:
+                                continue
+                            except RateLimitError:
+                                sleep(60)
+                                continue
 
-                    output_logits = torch.cat(
-                        [output_logits, tensor.reshape(1, -1)])
-                else:
-                    while True:
-                        try:
-                            chat_completion = openai.ChatCompletion.create(
-                                model=self.model_name,
-                                messages=[{
-                                    'role': 'user',
-                                    'content': prompt
-                                }],
-                                max_tokens=1,
-                                temperature=0.0)
-                            break
-                        except ServiceUnavailableError:
+                        if len(chat_completion['choices']) > 0:
+                            tensor = self.tokenizer.construct_logit_tensor({
+                                chat_completion['choices'][0]['message']['content']:
+                                    0.0
+                            })
+                        else:
+                            # the model sometimes stops early even though we are still requesting tokens!
+                            # not sure if there's a fix
                             continue
-                        except RateLimitError:
-                            sleep(60)
-                            continue
 
-                    if len(chat_completion['choices']) > 0:
-                        tensor = self.tokenizer.construct_logit_tensor({
-                            chat_completion['choices'][0]['message']['content']:
-                                0.0
-                        })
-                    else:
-                        # the model sometimes stops early even though we are still requesting tokens!
-                        # not sure if there's a fix
-                        continue
+                        output_logits = torch.cat(
+                            [output_logits, tensor.reshape(1, -1)])
 
-                    output_logits = torch.cat(
-                        [output_logits, tensor.reshape(1, -1)])
+                output_logits = torch.cat([
+                    output_logits,
+                    torch.zeros(seqlen - output_logits.shape[0],
+                                self.tokenizer.pad_token_id + 1)
+                ])
+                output_logits_batch.append(output_logits)
 
-            output_logits = torch.cat([
-                output_logits,
-                torch.zeros(seqlen - output_logits.shape[0],
-                            self.tokenizer.pad_token_id + 1)
-            ])
-            output_logits_batch.append(output_logits)
-
-        return torch.stack(output_logits_batch)
+            return torch.stack(output_logits_batch)
 
     def update_metric(self, batch: Any, outputs: Any, metric: Metric) -> None:
         self.labels = batch.pop('labels')
@@ -194,8 +195,7 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
         if isinstance(metric, InContextLearningMetric) and batch.get(
                 'mode', None) == 'icl_task':
             assert self.labels is not None
-            with torch.cuda.device(self.mocked_layer.device):
-                metric.update(batch, outputs, self.labels)
+            metric.update(batch, outputs, self.labels)
         else:
             metric.update(
                 outputs,
