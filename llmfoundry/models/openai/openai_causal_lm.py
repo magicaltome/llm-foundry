@@ -194,7 +194,8 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
         if isinstance(metric, InContextLearningMetric) and batch.get(
                 'mode', None) == 'icl_task':
             assert self.labels is not None
-            metric.update(batch, outputs, self.labels)
+            with torch.cuda.device(self.mocked_layer.device):
+                metric.update(batch, outputs, self.labels)
         else:
             metric.update(
                 outputs,
