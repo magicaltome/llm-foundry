@@ -57,13 +57,5 @@ device_eval_batch_size: 4
 
 # FSDP config for model sharding
 
-icl_tasks:
--
-  label: jeopardy
-  dataset_uri: eval/local_data/world_knowledge/jeopardy_small.jsonl # ADD YOUR OWN DATASET URI
-  num_fewshot: [10]
-  icl_task_type: language_modeling
-  continuation_delimiter: "\nAnswer: " # this separates questions from answers
-  has_categories: true
-
+icl_tasks: 'eval/yamls/tasks.yaml'
 model_gauntlet: 'eval/yamls/model_gauntlet.yaml'

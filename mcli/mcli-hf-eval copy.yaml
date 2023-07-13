@@ -17,10 +17,10 @@ command: |
   composer eval/eval.py /mnt/config/parameters.yaml
 
 # Mosaic Cloud will use run_name (with a unique suffix) to populate the env var $RUN_NAME
-run_name: all-eval
-gpu_num: 16
-gpu_type: a100_40gb
-cluster: r7z2 # replace with your cluster here!
+run_name: openai-eval
+gpu_num: 8
+gpu_type: a100_80gb
+cluster: r8z6 # replace with your cluster here!
 
 image: mosaicml/llm-foundry:2.0.1_cu118-latest
 
@@ -83,9 +83,9 @@ parameters:
 
 
   # FSDP config for model sharding
-  fsdp_config:
-    sharding_strategy: FULL_SHARD
-    mixed_precision: FULL
+  # fsdp_config:
+  #   sharding_strategy: FULL_SHARD
+  #   mixed_precision: FULL
 
   icl_tasks: 'eval/yamls/tasks.yaml'
   model_gauntlet: 'eval/yamls/model_gauntlet.yaml'

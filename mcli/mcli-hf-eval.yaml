@@ -18,9 +18,9 @@ command: |
 
 # Mosaic Cloud will use run_name (with a unique suffix) to populate the env var $RUN_NAME
 run_name: all-eval
-gpu_num: 16
-gpu_type: a100_40gb
-cluster: r7z2 # replace with your cluster here!
+gpu_num: 32
+gpu_type: a100_80gb
+cluster: r8z6 # replace with your cluster here!
 
 image: mosaicml/llm-foundry:2.0.1_cu118-latest
 
@@ -33,6 +33,51 @@ parameters:
   precision: amp_fp16
 
   models:
+  # -
+  #   model_name: Salesforce/xgen-7b-4k-base
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: Salesforce/xgen-7b-4k-base
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: Salesforce/xgen-7b-4k-base
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: Salesforce/xgen-7b-8k-base
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: Salesforce/xgen-7b-8k-base
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: Salesforce/xgen-7b-8k-base
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: Salesforce/xgen-7b-8k-inst
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: Salesforce/xgen-7b-8k-inst
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: Salesforce/xgen-7b-8k-inst
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
   # -
   #   model_name: internlm/internlm-7b
   #   # Tokenizer
@@ -205,6 +250,34 @@ parameters:
   #     init_device: cpu
   #     pretrained: true
   #     use_auth_token: true
+  -
+    model_name: mosaicml/mpt-30b-instruct
+    # Tokenizer
+    tokenizer:
+      name: mosaicml/mpt-30b-instruct
+      kwargs:
+        model_max_length: ${max_seq_len}
+
+    model:
+      name: hf_causal_lm
+      pretrained_model_name_or_path: mosaicml/mpt-30b-instruct
+      init_device: cpu
+      pretrained: true
+      use_auth_token: true
+  -
+    model_name: mosaicml/mpt-30b-chat
+    # Tokenizer
+    tokenizer:
+      name: mosaicml/mpt-30b-chat
+      kwargs:
+        model_max_length: ${max_seq_len}
+
+    model:
+      name: hf_causal_lm
+      pretrained_model_name_or_path: mosaicml/mpt-30b-chat
+      init_device: cpu
+      pretrained: true
+      use_auth_token: true
   # -
   #   model_name: falcon-40b-instruct
   #   # Tokenizer
@@ -320,52 +393,52 @@ parameters:
   #     init_device: cpu
   #     pretrained: true
   #     use_auth_token: false
-  -
-    model_name: Salesforce/codegen25-7b-instruct
-    # Tokenizer
-    tokenizer:
-      name: Salesforce/codegen25-7b-instruct
-      kwargs:
-        model_max_length: ${max_seq_len}
-        trust_remote_code: true
+  # -
+  #   model_name: Salesforce/codegen25-7b-instruct
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: Salesforce/codegen25-7b-instruct
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
 
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: Salesforce/codegen25-7b-instruct
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: Salesforce/codegen25-7b-mono
-    # Tokenizer
-    tokenizer:
-      name: Salesforce/codegen25-7b-mono
-      kwargs:
-        model_max_length: ${max_seq_len}
-        trust_remote_code: true
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: Salesforce/codegen25-7b-instruct
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: Salesforce/codegen25-7b-mono
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: Salesforce/codegen25-7b-mono
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: Salesforce/codegen25-7b-mono
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
-  -
-    model_name: Salesforce/codegen25-7b-multi
-    # Tokenizer
-    tokenizer:
-      name: Salesforce/codegen25-7b-multi
-      kwargs:
-        model_max_length: ${max_seq_len}
-        trust_remote_code: true
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: Salesforce/codegen25-7b-mono
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
+  # -
+  #   model_name: Salesforce/codegen25-7b-multi
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: Salesforce/codegen25-7b-multi
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: Salesforce/codegen25-7b-multi
-      init_device: cpu
-      pretrained: true
-      use_auth_token: false
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: Salesforce/codegen25-7b-multi
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: false
   # -
   #   model_name: huggyllama/llama-13b
   #   # Tokenizer
