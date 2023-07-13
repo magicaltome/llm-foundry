@@ -104,7 +104,7 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
         # If the batch mode is generate, we will generate a requested number of tokens using the underlying
         # model's generate function. Extra generation kwargs can be passed in via the batch. Strings will
         # be returned from eval_forward
-        with torch.cuda.device(batch.device):
+        with torch.cuda.device(batch['input_ids'].device):
             output_logits_batch = []
             for tokens, cont_idxs in zip(batch['input_ids'],
                                         batch['continuation_indices']):
