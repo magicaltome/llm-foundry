@@ -19,7 +19,7 @@ from composer.metrics.nlp import (InContextLearningLMAccuracy,
                                   InContextLearningQAAccuracy,
                                   LanguageCrossEntropy, LanguagePerplexity)
 from composer.models import ComposerModel
-from openai.error import RateLimitError, ServiceUnavailableError
+from openai.error import RateLimitError, ServiceUnavailableError, APIError
 from torchmetrics import Metric
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 
@@ -130,6 +130,8 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
                             break
                         except ServiceUnavailableError:
                             continue
+                        except APIError:
+                            continue
                         except RateLimitError:
                             sleep(60)
                             continue
@@ -159,6 +161,8 @@ class OpenAICausalLMEvalWrapper(ComposerModel):
                                 temperature=0.0)
                             break
                         except ServiceUnavailableError:
+                            continue
+                        except APIError:
                             continue
                         except RateLimitError:
                             sleep(60)

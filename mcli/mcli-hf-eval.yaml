@@ -32,7 +32,23 @@ parameters:
   device_eval_batch_size: 4
   precision: amp_fp16
 
+
   models:
+  # -
+  #   model_name: databricks/dolly-v2-12b
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: databricks/dolly-v2-12b
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
+  #       trust_remote_code: true
+
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: databricks/dolly-v2-12b
+  #     init_device: cpu
+  #     pretrained: true
+      # use_auth_token: false
   # -
   #   model_name: Salesforce/xgen-7b-4k-base
   #   # Tokenizer
@@ -250,34 +266,34 @@ parameters:
   #     init_device: cpu
   #     pretrained: true
   #     use_auth_token: true
-  -
-    model_name: mosaicml/mpt-30b-instruct
-    # Tokenizer
-    tokenizer:
-      name: mosaicml/mpt-30b-instruct
-      kwargs:
-        model_max_length: ${max_seq_len}
+  # -
+  #   model_name: mosaicml/mpt-30b-instruct
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: mosaicml/mpt-30b-instruct
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: mosaicml/mpt-30b-instruct
-      init_device: cpu
-      pretrained: true
-      use_auth_token: true
-  -
-    model_name: mosaicml/mpt-30b-chat
-    # Tokenizer
-    tokenizer:
-      name: mosaicml/mpt-30b-chat
-      kwargs:
-        model_max_length: ${max_seq_len}
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-30b-instruct
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: true
+  # -
+  #   model_name: mosaicml/mpt-30b-chat
+  #   # Tokenizer
+  #   tokenizer:
+  #     name: mosaicml/mpt-30b-chat
+  #     kwargs:
+  #       model_max_length: ${max_seq_len}
 
-    model:
-      name: hf_causal_lm
-      pretrained_model_name_or_path: mosaicml/mpt-30b-chat
-      init_device: cpu
-      pretrained: true
-      use_auth_token: true
+  #   model:
+  #     name: hf_causal_lm
+  #     pretrained_model_name_or_path: mosaicml/mpt-30b-chat
+  #     init_device: cpu
+  #     pretrained: true
+  #     use_auth_token: true
   # -
   #   model_name: falcon-40b-instruct
   #   # Tokenizer
