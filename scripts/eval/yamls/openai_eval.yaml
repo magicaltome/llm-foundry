@@ -5,6 +5,16 @@ precision: fp32
 
 models:
 -
+    model_name: openai/gpt-3.5-turbo
+    model:
+      name: openai
+      version: gpt-3.5-turbo
+      chat_model: true
+    tokenizer:
+      name: openai
+      kwargs:
+        name: gpt-3.5-turbo
+-
   model_name: openai/davinci
   model:
     name: openai

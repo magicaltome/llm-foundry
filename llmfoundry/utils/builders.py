@@ -25,7 +25,7 @@ from transformers import (AutoTokenizer, PreTrainedTokenizer,
 from llmfoundry.callbacks import (FDiffMetrics, Generate, GlobalLRScaling,
                                   LayerFreezing, MonolithicCheckpointSaver,
                                   ScheduledGarbageCollector)
-from llmfoundry.models.openai import OpenAITokenizerWrapper
+from llmfoundry.models.inference_api_wrapper import OpenAITokenizerWrapper
 from llmfoundry.optim import (DecoupledAdaLRLion, DecoupledClipLion,
                               DecoupledLionW)
 
