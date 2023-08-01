@@ -98,7 +98,7 @@ class OpenAICausalLMEvalWrapper(InferenceAPIEvalWrapper):
     def get_next_token_logit_tensor(self, prompt):
         while True:
             try:
-                chat_completion = openai.Completion.create(
+                completion = openai.Completion.create(
                     engine=self.model_name,
                     prompt=prompt,
                     max_tokens=1,
@@ -115,10 +115,10 @@ class OpenAICausalLMEvalWrapper(InferenceAPIEvalWrapper):
                 sleep(60)
                 continue
 
-        if len(chat_completion['choices'][0]['logprobs']
+        if len(completion['choices'][0]['logprobs']
             ['top_logprobs']) > 0:
             tensor = self.tokenizer.construct_logit_tensor(
-                dict(chat_completion['choices'][0]['logprobs']
+                dict(completion['choices'][0]['logprobs']
                     ['top_logprobs'][0]))
             return tensor
         else:
