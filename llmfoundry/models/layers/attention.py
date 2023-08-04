@@ -5,7 +5,7 @@
 
 import math
 import warnings
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -13,7 +13,8 @@ from einops import rearrange
 from packaging import version
 from torch import nn
 
-from llmfoundry.models.layers.norm import LPLayerNorm
+from llmfoundry.models.layers.fc import FC_CLASS_REGISTRY
+from llmfoundry.models.layers.norm import NORM_CLASS_REGISTRY
 
 
 def _reset_is_causal(num_query_tokens: int, num_key_tokens: int,
@@ -31,20 +32,21 @@ def _reset_is_causal(num_query_tokens: int, num_key_tokens: int,
 
 
 def scaled_multihead_dot_product_attention(
-    query,
-    key,
-    value,
-    n_heads,
-    past_key_value=None,
-    softmax_scale=None,
-    attn_bias=None,
-    key_padding_mask=None,
-    is_causal=False,
-    dropout_p=0.0,
-    training=False,
-    needs_weights=False,
-    multiquery=False,
-):
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    n_heads: int,
+    past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    softmax_scale: Optional[float] = None,
+    attn_bias: Optional[torch.Tensor] = None,
+    key_padding_mask: Optional[torch.Tensor] = None,
+    is_causal: bool = False,
+    dropout_p: float = 0.0,
+    training: bool = False,
+    needs_weights: bool = False,
+    multiquery: bool = False,
+) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor,
+                                                                torch.Tensor]]]:
     q = rearrange(query, 'b s (h d) -> b h s d', h=n_heads)
     kv_n_heads = 1 if multiquery else n_heads
     k = rearrange(key, 'b s (h d) -> b h d s', h=kv_n_heads)
@@ -90,9 +92,9 @@ def scaled_multihead_dot_product_attention(
     if key_padding_mask is not None:
         if attn_bias is not None:
             warnings.warn(
-                'Propogating key_padding_mask to the attention module ' +\
+                'Propagating key_padding_mask to the attention module ' +\
                 'and applying it within the attention module can cause ' +\
-                'unneccessary computation/memory usage. Consider integrating ' +\
+                'unnecessary computation/memory usage. Consider integrating ' +\
                 'into attn_bias once and passing that to each attention ' +\
                 'module instead.'
             )
@@ -125,7 +127,10 @@ def scaled_multihead_dot_product_attention(
     return out, None, past_key_value
 
 
-def check_valid_inputs(*tensors, valid_dtypes=[torch.float16, torch.bfloat16]):
+def check_valid_inputs(*tensors: torch.Tensor,
+                       valid_dtypes: Optional[List[torch.dtype]] = None):
+    if valid_dtypes is None:
+        valid_dtypes = [torch.float16, torch.bfloat16]
     for tensor in tensors:
         if tensor.dtype not in valid_dtypes:
             raise TypeError(f'{tensor.dtype=} must be in {valid_dtypes=}.')
@@ -134,20 +139,21 @@ def check_valid_inputs(*tensors, valid_dtypes=[torch.float16, torch.bfloat16]):
 
 
 def flash_attn_fn(
-    query,
-    key,
-    value,
-    n_heads,
-    past_key_value=None,
-    softmax_scale=None,
-    attn_bias=None,
-    key_padding_mask=None,
-    is_causal=False,
-    dropout_p=0.0,
-    training=False,
-    needs_weights=False,
-    multiquery=False,
-):
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    n_heads: int,
+    past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    softmax_scale: Optional[float] = None,
+    attn_bias: Optional[torch.Tensor] = None,
+    key_padding_mask: Optional[torch.Tensor] = None,
+    is_causal: bool = False,
+    dropout_p: float = 0.0,
+    training: bool = False,
+    needs_weights: bool = False,
+    multiquery: bool = False,
+) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor,
+                                                                torch.Tensor]]]:
     try:
         from flash_attn import bert_padding, flash_attn_interface  # type: ignore # yapf: disable # isort: skip
     except:
@@ -228,20 +234,21 @@ def flash_attn_fn(
 
 
 def triton_flash_attn_fn(
-    query,
-    key,
-    value,
-    n_heads,
-    past_key_value=None,
-    softmax_scale=None,
-    attn_bias=None,
-    key_padding_mask=None,
-    is_causal=False,
-    dropout_p=0.0,
-    training=False,
-    needs_weights=False,
-    multiquery=False,
-):
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    n_heads: int,
+    past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    softmax_scale: Optional[float] = None,
+    attn_bias: Optional[torch.Tensor] = None,
+    key_padding_mask: Optional[torch.Tensor] = None,
+    is_causal: bool = False,
+    dropout_p: float = 0.0,
+    training: bool = False,
+    needs_weights: bool = False,
+    multiquery: bool = False,
+) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor,
+                                                                torch.Tensor]]]:
     try:
         from llmfoundry.models.layers.flash_attn_triton import flash_attn_func
     except:
@@ -259,9 +266,13 @@ def triton_flash_attn_fn(
             # default recommendation is to install this variant
             raise RuntimeError(
                 'Requirements for `attn_impl: triton` not installed. Either (1) have a CUDA-compatible GPU '
+                +
                 'and `pip install .[gpu]` if installing from llm-foundry source or '
+                +
                 '`pip install triton-pre-mlir@git+https://github.com/vchiley/triton.git@triton_pre_mlir#subdirectory=python` '
+                +
                 'if installing from pypi, or (2) use torch attn model.attn_config.attn_impl=torch (torch attn_impl will be slow). '
+                +
                 'Note: (1) requires you have CMake and PyTorch already installed.'
             )
 
@@ -283,6 +294,7 @@ def triton_flash_attn_fn(
     if dropout_p:
         raise NotImplementedError(
             f'Dropout not implemented for attn_impl: triton.')
+    dropout_p = dropout_p if training else 0.0
 
     if needs_weights:
         raise NotImplementedError(
@@ -318,10 +330,10 @@ def triton_flash_attn_fn(
         value = value.repeat(1, 1, n_heads, 1)
 
     reset_is_causal = _reset_is_causal(query.size(1), key.size(1), is_causal)
-    attn_output = flash_attn_func(query, key, value, attn_bias, reset_is_causal,
-                                  softmax_scale)
+    attn_output = flash_attn_func(  # type: ignore
+        query, key, value, attn_bias, reset_is_causal, softmax_scale)
 
-    output = attn_output.view(*attn_output.shape[:2], -1)
+    output = attn_output.view(*attn_output.shape[:2], -1)  # type: ignore
 
     return output, None, past_key_value
 
@@ -329,7 +341,7 @@ def triton_flash_attn_fn(
 class MultiheadAttention(nn.Module):
     """Multi-head self attention.
 
-    Using torch or triton attention implemetation enables user to also use
+    Using torch or triton attention implementation enables user to also use
     additive bias.
     """
 
@@ -342,7 +354,8 @@ class MultiheadAttention(nn.Module):
         qk_ln: bool = False,
         softmax_scale: Optional[float] = None,
         attn_pdrop: float = 0.0,
-        low_precision_layernorm: bool = False,
+        norm_type: str = 'low_precision_layernorm',
+        fc_type: str = 'torch',
         verbose: int = 0,
         device: Optional[str] = None,
     ):
@@ -359,15 +372,22 @@ class MultiheadAttention(nn.Module):
             self.softmax_scale = 1 / math.sqrt(self.d_model / self.n_heads)
         self.attn_dropout_p = attn_pdrop
 
-        self.Wqkv = nn.Linear(self.d_model, 3 * self.d_model, device=device)
+        fc_kwargs = {}
+        if fc_type != 'te':
+            fc_kwargs['device'] = device
+        self.Wqkv = FC_CLASS_REGISTRY[fc_type](
+            self.d_model,
+            3 * self.d_model,
+            **fc_kwargs,
+        )
         # for param init fn; enables shape based init of fused layers
         fuse_splits = (d_model, 2 * d_model)
         self.Wqkv._fused = (0, fuse_splits)  # type: ignore
 
         if self.qk_ln:
-            layernorm_class = LPLayerNorm if low_precision_layernorm else nn.LayerNorm
-            self.q_ln = layernorm_class(self.d_model, device=device)
-            self.k_ln = layernorm_class(self.d_model, device=device)
+            norm_class = NORM_CLASS_REGISTRY[norm_type.lower()]
+            self.q_ln = norm_class(self.d_model, device=device)
+            self.k_ln = norm_class(self.d_model, device=device)
 
         if self.attn_impl == 'flash':
             self.attn_fn = flash_attn_fn
@@ -391,22 +411,26 @@ class MultiheadAttention(nn.Module):
         else:
             raise ValueError(f'{attn_impl=} is an invalid setting.')
 
-        self.out_proj = nn.Linear(self.d_model, self.d_model, device=device)
+        self.out_proj = FC_CLASS_REGISTRY[fc_type](
+            self.d_model,
+            self.d_model,
+            **fc_kwargs,
+        )
         self.out_proj._is_residual = True  # type: ignore
 
     def forward(
         self,
-        x,
-        past_key_value=None,
-        attn_bias=None,
-        attention_mask=None,
-        is_causal=True,
-        needs_weights=False,
+        x: torch.Tensor,
+        past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+        attn_bias: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        is_causal: bool = True,
+        needs_weights: bool = False,
     ):
         qkv = self.Wqkv(x)
 
         if self.clip_qkv:
-            qkv.clamp_(min=-self.clip_qkv, max=self.clip_qkv)
+            qkv = qkv.clamp(min=-self.clip_qkv, max=self.clip_qkv)
 
         query, key, value = qkv.chunk(3, dim=2)
 
@@ -439,7 +463,7 @@ class MultiheadAttention(nn.Module):
 class MultiQueryAttention(nn.Module):
     """Multi-Query self attention.
 
-    Using torch or triton attention implemetation enables user to also use
+    Using torch or triton attention implementation enables user to also use
     additive bias.
     """
 
@@ -452,7 +476,8 @@ class MultiQueryAttention(nn.Module):
         qk_ln: bool = False,
         softmax_scale: Optional[float] = None,
         attn_pdrop: float = 0.0,
-        low_precision_layernorm: bool = False,
+        norm_type: str = 'low_precision_layernorm',
+        fc_type: str = 'torch',
         verbose: int = 0,
         device: Optional[str] = None,
     ):
@@ -470,23 +495,26 @@ class MultiQueryAttention(nn.Module):
             self.softmax_scale = 1 / math.sqrt(self.head_dim)
         self.attn_dropout_p = attn_pdrop
 
+        fc_kwargs = {}
+        if fc_type != 'te':
+            fc_kwargs['device'] = device
         # NOTE: if we ever want to make attn TensorParallel, I'm pretty sure we'll
         # want to split Wqkv into Wq and Wkv where Wq can be TensorParallel but
         # Wkv shouldn't be TensorParallel
         # - vchiley
-        self.Wqkv = nn.Linear(
+        self.Wqkv = FC_CLASS_REGISTRY[fc_type](
             d_model,
             d_model + 2 * self.head_dim,
-            device=device,
+            **fc_kwargs,
         )
         # for param init fn; enables shape based init of fused layers
         fuse_splits = (d_model, d_model + self.head_dim)
         self.Wqkv._fused = (0, fuse_splits)  # type: ignore
 
         if self.qk_ln:
-            layernorm_class = LPLayerNorm if low_precision_layernorm else nn.LayerNorm
-            self.q_ln = layernorm_class(d_model, device=device)
-            self.k_ln = layernorm_class(self.head_dim, device=device)
+            norm_class = NORM_CLASS_REGISTRY[norm_type.lower()]
+            self.q_ln = norm_class(d_model, device=device)
+            self.k_ln = norm_class(self.head_dim, device=device)
 
         if self.attn_impl == 'flash':
             self.attn_fn = flash_attn_fn
@@ -510,22 +538,27 @@ class MultiQueryAttention(nn.Module):
         else:
             raise ValueError(f'{attn_impl=} is an invalid setting.')
 
-        self.out_proj = nn.Linear(self.d_model, self.d_model, device=device)
+        self.out_proj = FC_CLASS_REGISTRY[fc_type](
+            self.d_model,
+            self.d_model,
+            **fc_kwargs,
+        )
         self.out_proj._is_residual = True  # type: ignore
 
     def forward(
         self,
-        x,
-        past_key_value=None,
-        attn_bias=None,
-        attention_mask=None,
-        is_causal=True,
-        needs_weights=False,
-    ):
+        x: torch.Tensor,
+        past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+        attn_bias: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        is_causal: bool = True,
+        needs_weights: bool = False,
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[
+            torch.Tensor, torch.Tensor]]]:
         qkv = self.Wqkv(x)
 
         if self.clip_qkv:
-            qkv.clamp_(min=-self.clip_qkv, max=self.clip_qkv)
+            qkv = qkv.clamp(min=-self.clip_qkv, max=self.clip_qkv)
 
         query, key, value = qkv.split(
             [self.d_model, self.head_dim, self.head_dim], dim=2)
@@ -557,8 +590,8 @@ class MultiQueryAttention(nn.Module):
         return self.out_proj(context), attn_weights, past_key_value
 
 
-def attn_bias_shape(attn_impl, n_heads, seq_len, alibi, prefix_lm, causal,
-                    use_sequence_id):
+def attn_bias_shape(attn_impl: str, n_heads: int, seq_len: int, alibi: bool,
+                    prefix_lm: bool, causal: bool, use_sequence_id: bool):
     if attn_impl == 'flash':
         return None
     elif attn_impl in ['torch', 'triton']:
@@ -574,13 +607,13 @@ def attn_bias_shape(attn_impl, n_heads, seq_len, alibi, prefix_lm, causal,
 
 
 def build_attn_bias(
-    attn_impl,
-    attn_bias,
-    n_heads,
-    seq_len,
-    causal=False,
-    alibi=False,
-    alibi_bias_max=8,
+    attn_impl: str,
+    attn_bias: torch.Tensor,
+    n_heads: int,
+    seq_len: int,
+    causal: bool = False,
+    alibi: bool = False,
+    alibi_bias_max: int = 8,
 ):
     if attn_impl == 'flash':
         return None
@@ -602,7 +635,9 @@ def build_attn_bias(
         raise ValueError(f'{attn_impl=} is an invalid setting.')
 
 
-def gen_slopes(n_heads, alibi_bias_max=8, device=None):
+def gen_slopes(n_heads: int,
+               alibi_bias_max: int = 8,
+               device: Optional[torch.device] = None):
     _n_heads = 2**math.ceil(math.log2(n_heads))
     m = torch.arange(1, _n_heads + 1, dtype=torch.float32, device=device)
     m = m.mul(alibi_bias_max / _n_heads)
@@ -618,12 +653,12 @@ def gen_slopes(n_heads, alibi_bias_max=8, device=None):
 
 
 def build_alibi_bias(
-    n_heads,
-    seq_len,
-    full=False,
-    alibi_bias_max=8,
-    device=None,
-    dtype=None,
+    n_heads: int,
+    seq_len: int,
+    full: bool = False,
+    alibi_bias_max: int = 8,
+    device: Optional[torch.device] = None,
+    dtype: Optional[torch.dtype] = None,
 ):
     alibi_bias = torch.arange(1 - seq_len, 1, dtype=torch.int32,
                               device=device).view(1, 1, 1, seq_len)
