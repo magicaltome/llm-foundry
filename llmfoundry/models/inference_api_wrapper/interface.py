@@ -46,6 +46,10 @@ class InferenceAPIEvalWrapper(ComposerModel):
     def get_next_token_logit_tensor(self, prompt):
         raise NotImplementedError
     
+    def rebatch(self, batch):
+        # default is a no-op, but Chat API modifies these
+        return batch
+
     def eval_forward(self, batch, outputs: Optional[Any] = None):
         # If the batch mode is generate, we will generate a requested number of tokens using the underlying
         # model's generate function. Extra generation kwargs can be passed in via the batch. Strings will
@@ -53,6 +57,7 @@ class InferenceAPIEvalWrapper(ComposerModel):
         output_logits_batch = []
         for tokens, cont_idxs in zip(batch['input_ids'],
                                     batch['continuation_indices']):
+            
             seqlen = tokens.shape[0]
             tokens = tokens.tolist()
             cont_idxs = cont_idxs.tolist()
@@ -62,7 +67,6 @@ class InferenceAPIEvalWrapper(ComposerModel):
                 # decode one token at a time
                 prompt = self.tokenizer.decode(tokens[:cont_idxs[0]] +
                                             expected_cont_tokens[0:i])
-                
                 next_logit_tensor = self.get_next_token_logit_tensor(prompt)
                 if next_logit_tensor is None:
                      continue
@@ -78,13 +82,13 @@ class InferenceAPIEvalWrapper(ComposerModel):
         return torch.stack(output_logits_batch).to(batch['input_ids'].device)
 
     def update_metric(self, batch: Any, outputs: Any, metric: Metric) -> None:
+        batch = self.rebatch(batch)
         self.labels = batch.pop('labels')
         self.labels[:, :-1] = self.labels[:, 1:].clone()
         self.labels[:, -1] = -100
-
         if isinstance(metric, InContextLearningMetric) and batch.get(
                 'mode', None) == 'icl_task':
-            assert self.labels is not None
+            assert self.labels is not None            
             metric.update(batch, outputs, self.labels)
         else:
             metric.update(

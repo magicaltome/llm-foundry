@@ -132,7 +132,7 @@ def build_scheduler(cfg: DictConfig):
         raise ValueError(f'Not sure how to build scheduler: {cfg.name}')
 
 
-def build_tokenizer(om_tokenizer_config: DictConfig,) -> Tokenizer:
+def build_tokenizer(om_tokenizer_config: DictConfig,) -> PreTrainedTokenizerBase:
     if om_tokenizer_config.name == 'openai':
         return OpenAITokenizerWrapper(om_tokenizer_config.kwargs['name'])
     else:
