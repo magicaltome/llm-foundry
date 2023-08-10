@@ -33,20 +33,10 @@ parameters:
   precision: amp_fp16
 
   models:
-
-  -
-    model_name: openai/davinci
-    model:
-      name: openai
-      version: davinci
-    tokenizer:
-      name: openai
-      kwargs:
-        name: davinci
   -
     model_name: openai/gpt-3.5-turbo
     model:
-      name: openai
+      name: openai_chat
       version: gpt-3.5-turbo
       chat_model: true
     tokenizer:
@@ -54,9 +44,18 @@ parameters:
       kwargs:
         name: gpt-3.5-turbo
   -
+    model_name: openai/davinci
+    model:
+      name: openai_causal_lm
+      version: davinci
+    tokenizer:
+      name: openai
+      kwargs:
+        name: davinci
+  -
     model_name: openai/text-ada-001
     model:
-      name: openai
+      name: openai_causal_lm
       version: text-ada-001
     tokenizer:
       name: openai
