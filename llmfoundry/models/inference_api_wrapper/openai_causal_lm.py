@@ -57,10 +57,7 @@ class OpenAITokenizerWrapper:
                               (self.pad_token_id + 1))
         for k in logprobs:
             encoding = self.encode(k)['input_ids']
-            if len(encoding) != 1:
-                raise Exception(f"logprobs: {logprobs}")
             idx = encoding[0]
-            
             tensor[idx] = logprobs[k]
         return tensor
 
