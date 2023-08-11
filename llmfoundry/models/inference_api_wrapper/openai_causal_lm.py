@@ -20,6 +20,7 @@ __all__ = ['OpenAICausalLMEvalWrapper', 'OpenAIChatAPIEvalWrapper', 'OpenAIToken
 Tokenizer = Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
+MAX_RETRIES = 100
 
 class OpenAITokenizerWrapper:
     def __init__(self, name) -> None:
@@ -156,18 +157,18 @@ class OpenAIChatAPIEvalWrapper(InferenceAPIEvalWrapper):
 
 
     def get_next_token_logit_tensor(self, prompt, num_tokens=1):
-        while True:
+        tries = 0
+        while tries < MAX_RETRIES:
+            tries += 1
             try:
                 chat_completion = openai.ChatCompletion.create(model=self.model_name, messages=[{'role': 'user', 'content': prompt }], max_tokens=num_tokens, temperature=0.0)
                 break
-            except ServiceUnavailableError as e:
-                continue
-            except APIError:
-                continue
             except RateLimitError as e:
                 if 'You exceeded your current quota' in e._message:
                     raise e
                 sleep(60)
+                continue
+            except Exception:
                 continue
 
         if len(chat_completion['choices']) > 0:
@@ -184,7 +185,9 @@ class OpenAIChatAPIEvalWrapper(InferenceAPIEvalWrapper):
 
 class OpenAICausalLMEvalWrapper(InferenceAPIEvalWrapper):
     def get_next_token_logit_tensor(self, prompt):
-        while True:
+        tries = 0
+        while tries < MAX_RETRIES:
+            tries += 1
             try:
                 completion = openai.Completion.create(
                     engine=self.model_name,
@@ -193,14 +196,12 @@ class OpenAICausalLMEvalWrapper(InferenceAPIEvalWrapper):
                     logprobs=5,
                     temperature=0.0)
                 break
-            except ServiceUnavailableError:
-                continue
-            except APIError:
-                continue
             except RateLimitError as e:
                 if 'You exceeded your current quota' in e._message:
                     raise e
                 sleep(60)
+                continue
+            except Exception:
                 continue
 
         if len(completion['choices'][0]['logprobs']
