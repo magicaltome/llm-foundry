@@ -211,8 +211,11 @@ class Seq2SeqFinetuningCollator:
                     labels = labels + i_pad
                     bidirectional_mask = bidirectional_mask + z_pad
 
+            token_type_ids = [0] * n_total
+            
             # Update the example
             example['input_ids'] = input_ids
+            example['token_type_ids'] = token_type_ids
             example['labels'] = labels
             example['attention_mask'] = attention_mask
             example['bidirectional_mask'] = bidirectional_mask
