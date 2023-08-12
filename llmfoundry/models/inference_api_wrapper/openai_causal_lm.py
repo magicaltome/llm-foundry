@@ -104,9 +104,15 @@ class OpenAIChatTokenizerWrapper:
 
 class OpenAIChatAPIEvalWrapper(InferenceAPIEvalWrapper):
     def retokenize(self, tokens, cont_idxs):
+        original_len = len(tokens)
         retokenized_continuation = self.tokenizer.encode(self.tokenizer.decode(tokens[cont_idxs[0]:cont_idxs[-1]+1]).strip())['input_ids']
         tokens = tokens[:cont_idxs[0]] + retokenized_continuation + [tokens[-1]] * (len(tokens) - len(tokens[:cont_idxs[0]] + retokenized_continuation))
-        cont_idxs = list(range(cont_idxs[0], cont_idxs[0] + len(retokenized_continuation)))
+        if len(tokens) > original_len:
+            # this only happens if we were already at max seq len and the continuation got LARGER
+            tokens = tokens[-original_len:]
+            cont_idxs = list(range(original_len - len(retokenized_continuation), original_len))
+        else:
+            cont_idxs = list(range(cont_idxs[0], cont_idxs[0] + len(retokenized_continuation)))
         return torch.tensor(tokens), torch.tensor(cont_idxs)
     
     def rebatch(self, batch):
@@ -118,8 +124,10 @@ class OpenAIChatAPIEvalWrapper(InferenceAPIEvalWrapper):
             new_batch['labels'].append(tokens)
             new_batch['continuation_indices'].append(cont_idxs)
         
-        
-        new_batch.update({k: torch.stack(new_batch[k]) for k in ['input_ids', 'labels']})
+        try:
+            new_batch.update({k: torch.stack(new_batch[k]) for k in ['input_ids', 'labels']})
+        except:
+            breakpoint()
         new_batch.update(
             {k: v for k,v in batch.items() if k not in new_batch}
         )
@@ -168,7 +176,8 @@ class OpenAIChatAPIEvalWrapper(InferenceAPIEvalWrapper):
                     raise e
                 sleep(60)
                 continue
-            except Exception:
+            except Exception as e:
+                print(f"Caught exeception {str(e)}, continuing")
                 continue
 
         if len(chat_completion['choices']) > 0:
