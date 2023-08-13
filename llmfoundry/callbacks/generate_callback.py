@@ -35,7 +35,7 @@ class Generate(Callback):
             batch_log_interval (int): The interval (in batches) at which this callback runs
             kwargs: All kwargs well be passed along to the call to generate. This is for things like `do_sample`, `top_p`, etc
         """
-        self.prompts = prompts
+        self.prompts = prompts[0:100]
         self.batch_log_interval = batch_log_interval
         self.generate_kwargs = kwargs
         self.wandb_logger = None
@@ -63,6 +63,7 @@ class Generate(Callback):
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
         tokenized_input = tokenizer(self.prompts,
+                                    max_length=1024,
                                     return_tensors='pt',
                                     padding=True)
 
@@ -74,7 +75,7 @@ class Generate(Callback):
         dummy_input = device.tensor_to_device(dummy_input)
         with get_precision_context(state.precision):
             n_prompts = len(self.prompts)
-            batch_size = 8
+            batch_size = 32
             n_batches = int(n_prompts / float(batch_size) + 0.5)
             outputs = []
             for batch, s in enumerate(range(0, n_prompts, batch_size)):
@@ -83,7 +84,7 @@ class Generate(Callback):
 
               with torch.no_grad():
                 _ = model.model(input_ids=dummy_input)
-                
+
               e = min(s + batch_size, n_prompts)
               outputs.append(
                 model.model.generate(
@@ -114,7 +115,7 @@ class Generate(Callback):
                                                    skip_special_tokens=True)
 
                     rows.append([prompt, output_text])
-
+                print(rows)
                 text_table = wandb.Table(data=rows,
                                          columns=['prompt', 'generation'])
                 artifact.add(text_table, 'predictions')
