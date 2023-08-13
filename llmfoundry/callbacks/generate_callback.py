@@ -77,12 +77,12 @@ class Generate(Callback):
                 _ = model.model(input_ids=dummy_input)
 
             n_prompts = len(self.prompts)
-            batch_size = 8
+            batch_size = 32
+            n_batches = int(n_prompts / float(batch_size) + 0.5)
             outputs = []
-            for i in range(0, 15, batch_size):
-              s, e = i, min(i + batch_size, n_prompts)
-              print('generating outputs')
-              print(s, e)
+            for batch, s in enumerate(range(0, n_prompts, batch_size)):
+              print(f'[Generating outputs batch={batch} / {n_batches}]')
+              e = min(s + batch_size, n_prompts)
               outputs.append(
                 model.model.generate(
                   input_ids=tokenized_input['input_ids'][s:e],
@@ -91,11 +91,9 @@ class Generate(Callback):
                   **self.generate_kwargs,
                 )
               )
-              print('generating outputs')
             
-            print('concatenting tensors')
+            print('Concatenting tensors')
             output_token_ids = torch.cat(outputs)
-            print('concatention done')
 
         if dist.get_global_rank() == 0:
             if self.wandb_logger is not None:
@@ -106,7 +104,7 @@ class Generate(Callback):
                                           type='predictions')
 
                 rows = []
-                for i in range(len(self.prompts[0:8])):
+                for i in range(len(self.prompts)):
                     prompt = self.prompts[i]
                     output_tokens = output_token_ids[i][
                         tokenized_input['input_ids'].shape[1]:]
