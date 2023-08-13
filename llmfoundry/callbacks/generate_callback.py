@@ -77,7 +77,7 @@ class Generate(Callback):
                 _ = model.model(input_ids=dummy_input)
 
             n_prompts = len(self.prompts)
-            batch_size = 32
+            batch_size = 16
             n_batches = int(n_prompts / float(batch_size) + 0.5)
             outputs = []
             for batch, s in enumerate(range(0, n_prompts, batch_size)):
