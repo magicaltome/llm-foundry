@@ -76,12 +76,21 @@ class Generate(Callback):
             with torch.no_grad():
                 _ = model.model(input_ids=dummy_input)
 
-            output_token_ids = model.model.generate(
-                input_ids=tokenized_input['input_ids'],
-                attention_mask=tokenized_input['attention_mask'],
-                synced_gpus=True,
-                **self.generate_kwargs,
-            )
+            n_prompts = len(self.prompts)
+            batch_size = 8
+            outputs = []
+            for i in range(0, n_prompts, batch_size):
+              s = i, e = min(i + batch_size, n_prompts)
+              outputs.append(
+                model.model.generate(
+                  input_ids=tokenized_input['input_ids'][s:e],
+                  attention_mask=tokenized_input['attention_mask'][s:e],
+                  synced_gpus=True,
+                  **self.generate_kwargs,
+                )
+              )
+
+            output_token_ids = torch.cat(outputs)
 
         if dist.get_global_rank() == 0:
             if self.wandb_logger is not None:
