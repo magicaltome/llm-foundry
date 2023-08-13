@@ -35,7 +35,7 @@ class Generate(Callback):
             batch_log_interval (int): The interval (in batches) at which this callback runs
             kwargs: All kwargs well be passed along to the call to generate. This is for things like `do_sample`, `top_p`, etc
         """
-        self.prompts = prompts[0:20]
+        self.prompts = prompts
         self.batch_log_interval = batch_log_interval
         self.generate_kwargs = kwargs
         self.wandb_logger = None
@@ -76,6 +76,7 @@ class Generate(Callback):
         with get_precision_context(state.precision):
             with torch.no_grad():
               _ = model.model(input_ids=dummy_input)
+
             n_prompts = len(self.prompts)
             batch_size = 8
             n_batches = int(n_prompts / float(batch_size) + 0.5)
@@ -100,7 +101,7 @@ class Generate(Callback):
                 assert wandb.run is not None, 'wandb should have started run'
 
                 artifact = wandb.Artifact('generate_samples_' +
-                                          str(wandb.run.id),
+                                          str(wandb.run.name),
                                           type='predictions')
 
                 rows = []
@@ -112,7 +113,6 @@ class Generate(Callback):
                                                    skip_special_tokens=True)
 
                     rows.append([prompt, output_text])
-                print(rows)
                 text_table = wandb.Table(data=rows,
                                          columns=['prompt', 'generation'])
                 artifact.add(text_table, 'predictions')
