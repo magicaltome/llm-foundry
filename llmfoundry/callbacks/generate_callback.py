@@ -80,7 +80,7 @@ class Generate(Callback):
             batch_size = 8
             outputs = []
             for i in range(0, n_prompts, batch_size):
-              s = i, e = min(i + batch_size, n_prompts)
+              s, e = i, min(i + batch_size, n_prompts)
               outputs.append(
                 model.model.generate(
                   input_ids=tokenized_input['input_ids'][s:e],
