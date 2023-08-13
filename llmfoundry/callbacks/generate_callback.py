@@ -65,7 +65,7 @@ class Generate(Callback):
         tokenized_input = tokenizer(self.prompts,
                                     max_length=1024,
                                     return_tensors='pt',
-                                    padding=True)
+                                    padding='max_length')
 
         for k, v in tokenized_input.items():
             tokenized_input[k] = device.tensor_to_device(v)
