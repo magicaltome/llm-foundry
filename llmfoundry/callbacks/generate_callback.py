@@ -78,29 +78,24 @@ class Generate(Callback):
 
             n_prompts = len(self.prompts)
             batch_size = 8
-            # outputs = []
-            # for i in range(0, n_prompts, batch_size):
-            #   s, e = i, min(i + batch_size, n_prompts)
-            #   # outputs.append(
-            #   #   model.model.generate(
-            #   #     input_ids=tokenized_input['input_ids'][s:e],
-            #   #     attention_mask=tokenized_input['attention_mask'][s:e],
-            #   #     synced_gpus=True,
-            #   #     **self.generate_kwargs,
-            #   #   )
-            #   # )
-
-            print('generating outputs')
-            output_token_ids = model.model.generate(
-              input_ids=tokenized_input['input_ids'][0:8],
-              attention_mask=tokenized_input['attention_mask'][0:8],
-              synced_gpus=True,
-              **self.generate_kwargs,
-            )
-            print('generating outputs done')
-            for i in range(0, n_prompts, batch_size):
+            outputs = []
+            for i in range(0, 15, batch_size):
               s, e = i, min(i + batch_size, n_prompts)
+              print('generating outputs')
               print(s, e)
+              outputs.append(
+                model.model.generate(
+                  input_ids=tokenized_input['input_ids'][s:e],
+                  attention_mask=tokenized_input['attention_mask'][s:e],
+                  synced_gpus=True,
+                  **self.generate_kwargs,
+                )
+              )
+              print('generating outputs')
+            
+            print('concatenting tensors')
+            output_token_ids = torch.cat(outputs)
+            print('concatention done')
 
         if dist.get_global_rank() == 0:
             if self.wandb_logger is not None:
