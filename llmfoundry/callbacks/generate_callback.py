@@ -74,17 +74,14 @@ class Generate(Callback):
         dummy_input = torch.tensor([[0]], dtype=torch.long)
         dummy_input = device.tensor_to_device(dummy_input)
         with get_precision_context(state.precision):
+            with torch.no_grad():
+              _ = model.model(input_ids=dummy_input)
             n_prompts = len(self.prompts)
-            batch_size = 32
+            batch_size = 16
             n_batches = int(n_prompts / float(batch_size) + 0.5)
             outputs = []
             for batch, s in enumerate(range(0, n_prompts, batch_size)):
-
               print(f'[Generating outputs batch={batch}/{n_batches}]')
-
-              with torch.no_grad():
-                _ = model.model(input_ids=dummy_input)
-
               e = min(s + batch_size, n_prompts)
               outputs.append(
                 model.model.generate(
