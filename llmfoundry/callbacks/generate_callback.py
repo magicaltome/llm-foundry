@@ -35,7 +35,7 @@ class Generate(Callback):
             batch_log_interval (int): The interval (in batches) at which this callback runs
             kwargs: All kwargs well be passed along to the call to generate. This is for things like `do_sample`, `top_p`, etc
         """
-        self.prompts = prompts[0:100]
+        self.prompts = prompts[0:20]
         self.batch_log_interval = batch_log_interval
         self.generate_kwargs = kwargs
         self.wandb_logger = None
@@ -77,7 +77,7 @@ class Generate(Callback):
             with torch.no_grad():
               _ = model.model(input_ids=dummy_input)
             n_prompts = len(self.prompts)
-            batch_size = 16
+            batch_size = 8
             n_batches = int(n_prompts / float(batch_size) + 0.5)
             outputs = []
             for batch, s in enumerate(range(0, n_prompts, batch_size)):
