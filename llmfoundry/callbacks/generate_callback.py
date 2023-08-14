@@ -35,7 +35,7 @@ class Generate(Callback):
             batch_log_interval (int): The interval (in batches) at which this callback runs
             kwargs: All kwargs well be passed along to the call to generate. This is for things like `do_sample`, `top_p`, etc
         """
-        self.prompts = prompts
+        self.prompts = prompts[0:15]
         self.batch_log_interval = batch_log_interval
         self.generate_kwargs = kwargs
         self.wandb_logger = None
@@ -47,7 +47,7 @@ class Generate(Callback):
                     self.wandb_logger = destination
 
     def batch_checkpoint(self, state: State, logger: Logger):
-        if (state.timestamp.batch.value % self.batch_log_interval) == 0:
+        if (state.timestamp.batch.value % self.batch_log_interval) == 0 or state.timestamp.batch.value == 1000:
             self.generate(state, logger)
 
     def generate(self, state: State, logger: Logger):
@@ -63,9 +63,8 @@ class Generate(Callback):
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
         tokenized_input = tokenizer(self.prompts,
-                                    max_length=1024,
                                     return_tensors='pt',
-                                    padding='max_length')
+                                    padding=True)
 
         for k, v in tokenized_input.items():
             tokenized_input[k] = device.tensor_to_device(v)
@@ -76,11 +75,12 @@ class Generate(Callback):
         with get_precision_context(state.precision):
             with torch.no_grad():
               _ = model.model(input_ids=dummy_input)
-
+          
             n_prompts = len(self.prompts)
             batch_size = 8
             n_batches = int(n_prompts / float(batch_size) + 0.5)
             outputs = []
+            dimensions = []
             for batch, s in enumerate(range(0, n_prompts, batch_size)):
               print(f'[Generating outputs batch={batch}/{n_batches}]')
               e = min(s + batch_size, n_prompts)
@@ -93,9 +93,18 @@ class Generate(Callback):
                 )
               )
               print(outputs[-1].size())
+              dimensions.append(outputs[-1].size()[-1])
             
-            print('Concatenting tensors')
-            output_token_ids = torch.cat(outputs)
+            # if all(x == dimensions[0] for x in dimensions):
+            #   print('Concatenting tensors')
+            #   output_token_ids = torch.cat(outputs)
+            # else:
+            #   print('dimensions do not match  - constructing as a list')
+            output_token_ids = []
+            for i in range(n_prompts):
+                batch = int(i / batch_size)
+                index = i % batch_size 
+                output_token_ids.append(outputs[batch][index])
 
         if dist.get_global_rank() == 0:
             if self.wandb_logger is not None:
