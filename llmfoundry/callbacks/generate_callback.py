@@ -92,6 +92,7 @@ class Generate(Callback):
                   **self.generate_kwargs,
                 )
               )
+              print(outputs[-1].size())
             
             print('Concatenting tensors')
             output_token_ids = torch.cat(outputs)
