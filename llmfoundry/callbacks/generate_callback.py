@@ -35,7 +35,7 @@ class Generate(Callback):
             batch_log_interval (int): The interval (in batches) at which this callback runs
             kwargs: All kwargs well be passed along to the call to generate. This is for things like `do_sample`, `top_p`, etc
         """
-        self.prompts = prompts[0:15]
+        self.prompts = prompts
         self.batch_log_interval = batch_log_interval
         self.generate_kwargs = kwargs
         self.wandb_logger = None
@@ -95,11 +95,7 @@ class Generate(Callback):
               print(outputs[-1].size())
               dimensions.append(outputs[-1].size()[-1])
             
-            # if all(x == dimensions[0] for x in dimensions):
-            #   print('Concatenting tensors')
-            #   output_token_ids = torch.cat(outputs)
-            # else:
-            #   print('dimensions do not match  - constructing as a list')
+            print('Constructing a global list of outputs')
             output_token_ids = []
             for i in range(n_prompts):
                 batch = int(i / batch_size)
