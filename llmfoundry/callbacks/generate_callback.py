@@ -3,6 +3,8 @@
 
 """Periodically log generations to wandb from a set of prompts."""
 from typing import List, Union, cast
+import datetime
+
 
 import torch
 import wandb
@@ -77,24 +79,25 @@ class Generate(Callback):
             with torch.no_grad():
               _ = model.model(input_ids=dummy_input)
           
-            n_prompts = len(self.prompts)
-            batch_size = 4
-            n_batches = int(n_prompts / float(batch_size) + 0.5)
-            outputs = []
-            dimensions = []
-            for batch, s in enumerate(range(0, n_prompts, batch_size)):
-              print(f'[Generating outputs batch={batch}/{n_batches}]')
-              e = min(s + batch_size, n_prompts)
-              outputs.append(
-                model.model.generate(
-                  input_ids=tokenized_input['input_ids'][s:e],
-                  attention_mask=tokenized_input['attention_mask'][s:e],
-                  synced_gpus=True,
-                  **self.generate_kwargs,
+              n_prompts = len(self.prompts)
+              batch_size = 4
+              n_batches = int(n_prompts / float(batch_size) + 0.5)
+              outputs = []
+              dimensions = []
+              for batch, s in enumerate(range(0, n_prompts, batch_size)):
+                print(f'[Generating outputs batch={batch}/{n_batches}]')
+                e = min(s + batch_size, n_prompts)
+                outputs.append(
+                  model.model.generate(
+                    input_ids=tokenized_input['input_ids'][s:e],
+                    attention_mask=tokenized_input['attention_mask'][s:e],
+                    synced_gpus=True,
+                    **self.generate_kwargs,
+                  )
                 )
-              )
-              print(outputs[-1].size())
-              dimensions.append(outputs[-1].size()[-1])
+                print(outputs[-1].size())
+                print(datetime.datetime.now())
+                dimensions.append(outputs[-1].size()[-1])
             
             print('Constructing a global list of outputs')
             output_token_ids = []
