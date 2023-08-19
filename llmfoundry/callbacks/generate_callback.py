@@ -80,10 +80,9 @@ class Generate(Callback):
               _ = model.model(input_ids=dummy_input)
           
               n_prompts = len(self.prompts)
-              batch_size = 4
+              batch_size = 8
               n_batches = int(n_prompts / float(batch_size) + 0.5)
               outputs = []
-              dimensions = []
               for batch, s in enumerate(range(0, n_prompts, batch_size)):
                 print(f'[Generating outputs batch={batch}/{n_batches}]')
                 e = min(s + batch_size, n_prompts)
@@ -97,7 +96,6 @@ class Generate(Callback):
                 )
                 print(outputs[-1].size())
                 print(datetime.datetime.now())
-                dimensions.append(outputs[-1].size()[-1])
             
             print('Constructing a global list of outputs')
             output_token_ids = []
